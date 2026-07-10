@@ -88,7 +88,7 @@ function buildPrompt(payload) {
   const h = payload.habitScore || {};
 
   const subjectLines = subjects.map(s =>
-    `- ${s.name}: 중간 ${s.mid}등급 → 목표 ${s.target}등급, 필요 기말 ${s.unreachable ? '달성 불가' : s.neededFinal + '등급'}, 최근 추이 ${s.trend}, 달성 확률 약 ${s.probability}%`
+    `- ${s.name}: 중간 ${s.mid}등급 → 목표 ${s.target}등급, 필요 기말 ${s.unreachable ? '달성 불가' : s.neededFinal + '등급'}, 최근 추이 ${s.trend}, 공부 방식 ${s.efficiency}, 달성 확률 약 ${s.probability}%`
   ).join('\n');
 
   return `너는 대한민국 고등학생의 내신 성적을 상담하는 학습 컨설턴트야.
@@ -101,12 +101,11 @@ ${subjectLines || '- (입력된 과목 없음)'}
 [학습 조건]
 - 시험까지 남은 기간: ${c.daysLeft}일
 - 하루 순공 시간: ${c.studyHours}시간 (권장 ${c.recommendedHours}시간)
-- 기상 시간: ${c.wakeTime}
+- 하루 평균 수면 시간: ${c.sleepHours}시간
 - 하루 스마트폰 사용: ${c.phoneHours}시간
-- 주 학습 방식: ${c.efficiency}
 
 [학습 습관 점수(100점 만점)]
-- 종합 ${h.overall}점 / 공부시간 ${h.study} / 기상 ${h.wake} / 스마트폰 ${h.phone} / 학습효율 ${h.efficiency}
+- 종합 ${h.overall}점 / 공부시간 ${h.study} / 수면 ${h.sleep} / 스마트폰 ${h.phone} / 학습효율(과목 평균) ${h.efficiency}
 
 아래 JSON 스키마 형식으로만 응답해. 마크다운 기호(*, #, - 등)는 쓰지 말고 자연스러운 존댓말 문장으로 작성해.
 

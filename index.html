@@ -52,7 +52,7 @@
   .divider{border:none;border-top:1px solid var(--line);margin:16px 0;}
   .grade-need{font-size:1.1rem;font-weight:700;color:var(--accent);}
   .subject-row{border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--bg);}
-  .subject-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr auto;gap:10px;align-items:end;}
+  .subject-grid{display:grid;grid-template-columns:1.3fr 0.8fr 0.8fr 1fr 1fr auto;gap:10px;align-items:end;}
   .subject-grid label{font-size:0.72rem;margin-bottom:4px;}
   .subject-grid select,.subject-grid input{margin-bottom:0;}
   .subjectName.invalid{border-color:var(--bad);}
@@ -99,26 +99,19 @@
     </div>
     <div class="row">
       <div>
-        <label for="wakeTime">기상 시간</label>
-        <input type="time" id="wakeTime" value="07:00">
+        <label for="sleepHours">하루 평균 수면 시간 (시간)</label>
+        <input type="number" id="sleepHours" min="0" max="20" step="0.5" value="7">
       </div>
       <div>
         <label for="phoneHours">하루 스마트폰 사용 시간 (시간)</label>
         <input type="number" id="phoneHours" min="0" max="14" step="0.5" value="2">
       </div>
     </div>
+    <div class="hint">수면 · 순공 · 스마트폰 사용 시간의 합은 하루 24시간을 넘을 수 없습니다.</div>
 
     <label for="studyStartTime">집중 학습(자율학습) 시작 시간</label>
     <div class="hint">추천 시간표가 이 시간부터 배치됩니다. 오전/오후에 주로 공부한다면 그 시간으로 바꿔주세요.</div>
     <input type="time" id="studyStartTime" value="19:00">
-
-    <label for="efficiency">오늘 공부 대부분은?</label>
-    <select id="efficiency">
-      <option value="concept">개념 학습</option>
-      <option value="practice" selected>문제풀이</option>
-      <option value="review">오답복습</option>
-      <option value="pastexam">기출풀이</option>
-    </select>
 
     <div class="row">
       <div>
@@ -172,7 +165,7 @@ function gradeOptions(selected){
   for (let g = 1; g <= 5; g++) html += `<option value="${g}" ${g === selected ? "selected" : ""}>${g}등급</option>`;
   return html;
 }
-function addSubjectRow(name, mid, target, trend){
+function addSubjectRow(name, mid, target, trend, efficiency){
   subjectCounter++;
   const id = "subj_" + subjectCounter;
   const wrap = document.createElement('div');
@@ -190,6 +183,14 @@ function addSubjectRow(name, mid, target, trend){
           <option value="down" ${trend === 'down' ? 'selected' : ''}>하락 중</option>
         </select>
       </div>
+      <div><label>이 과목 공부 방식</label>
+        <select class="subjectEfficiency">
+          <option value="concept" ${efficiency === 'concept' ? 'selected' : ''}>개념 학습</option>
+          <option value="practice" ${efficiency === 'practice' ? 'selected' : ''}>문제풀이</option>
+          <option value="review" ${efficiency === 'review' ? 'selected' : ''}>오답복습</option>
+          <option value="pastexam" ${efficiency === 'pastexam' ? 'selected' : ''}>기출풀이</option>
+        </select>
+      </div>
       <div><label>&nbsp;</label><button type="button" class="remove-btn" onclick="removeSubjectRow('${id}')">삭제</button></div>
     </div>`;
   document.getElementById('subjectList').appendChild(wrap);
@@ -199,8 +200,8 @@ function removeSubjectRow(id){
   if (rows.length <= 1) return;
   document.querySelector(`.subject-row[data-id="${id}"]`).remove();
 }
-document.getElementById('addSubjectBtn').addEventListener('click', () => addSubjectRow('', 2, 1, 'steady'));
-addSubjectRow('국어', 2, 1, 'steady');
+document.getElementById('addSubjectBtn').addEventListener('click', () => addSubjectRow('', 2, 1, 'steady', 'practice'));
+addSubjectRow('국어', 2, 1, 'steady', 'practice');
 
 // 과목명을 입력하면 실시간으로 경고 표시를 지워준다
 document.getElementById('subjectList').addEventListener('input', (e) => {
@@ -268,24 +269,28 @@ function getInputData(){
     target = Math.max(1, Math.min(5, target));
     const rawTrend = row.querySelector('.subjectTrend').value;
     const trend = ['up', 'steady', 'down'].includes(rawTrend) ? rawTrend : 'steady';
-    subjects.push({ name, mid, target, trend });
+    const rawSubjectEfficiency = row.querySelector('.subjectEfficiency').value;
+    const efficiency = ['concept', 'practice', 'review', 'pastexam'].includes(rawSubjectEfficiency) ? rawSubjectEfficiency : 'practice';
+    subjects.push({ name, mid, target, trend, efficiency });
   });
 
   const daysLeft = parseNumInput('daysLeft', 30, 1, 200, '시험까지 남은 기간', warnings);
-  const hours = parseNumInput('hours', 0, 0, 20, '하루 평균 순공 시간', warnings);
+  let hours = parseNumInput('hours', 0, 0, 20, '하루 평균 순공 시간', warnings);
   let phoneHours = parseNumInput('phoneHours', 0, 0, 14, '하루 스마트폰 사용 시간', warnings);
-  // 순공 시간과 폰 사용 시간은 각각 24시간을 넘을 수 없고(위에서 이미 20/14시간으로 제한됨),
-  // 둘을 합쳐도 하루 24시간을 넘을 수 없다. 넘으면 스마트폰 사용 시간을 줄여 맞춘다.
-  if (hours + phoneHours > 24) {
-    const adjustedPhone = Math.max(0, 24 - hours);
-    warnings.push(`"하루 순공 시간"과 "하루 스마트폰 사용 시간"의 합이 24시간을 넘어, 스마트폰 사용 시간을 ${adjustedPhone.toFixed(1)}시간으로 보정했습니다.`);
+  const sleepHours = parseNumInput('sleepHours', 7, 0, 20, '하루 평균 수면 시간', warnings);
+  // 수면 + 순공 + 스마트폰 사용 시간의 합은 하루 24시간을 넘을 수 없다.
+  // 수면은 건강과 직결된 값이라 최대한 그대로 두고, 먼저 순공 시간을, 그래도 넘으면 스마트폰 사용 시간을 줄여 맞춘다.
+  if (sleepHours + hours > 24) {
+    const adjustedHours = Math.max(0, 24 - sleepHours);
+    warnings.push(`"하루 평균 수면 시간"과 "하루 평균 순공 시간"의 합이 24시간을 넘어, 순공 시간을 ${adjustedHours.toFixed(1)}시간으로 보정했습니다.`);
+    hours = adjustedHours;
+  }
+  if (sleepHours + hours + phoneHours > 24) {
+    const adjustedPhone = Math.max(0, 24 - sleepHours - hours);
+    warnings.push(`"수면", "순공", "스마트폰 사용" 시간의 합이 24시간을 넘어, 스마트폰 사용 시간을 ${adjustedPhone.toFixed(1)}시간으로 보정했습니다.`);
     phoneHours = adjustedPhone;
   }
-  const wakeTime = parseTimeInput('wakeTime', '07:00', '기상 시간', warnings);
   const studyStartTime = parseTimeInput('studyStartTime', '19:00', '집중 학습 시작 시간', warnings);
-
-  const rawEfficiency = document.getElementById('efficiency').value;
-  const efficiency = ['concept', 'practice', 'review', 'pastexam'].includes(rawEfficiency) ? rawEfficiency : 'practice';
 
   // 수행평가: 비율과 점수가 "둘 다" 유효할 때만 반영한다. 점수만 비어있다고 최악(5등급)으로 취급하지 않는다.
   const paRatioRaw = document.getElementById('paRatio').value.trim();
@@ -305,7 +310,7 @@ function getInputData(){
     paRatio = 0;
   }
 
-  const shared = { daysLeft, hours, wakeTime, studyStartTime, phoneHours, efficiency, paRatio, paScore };
+  const shared = { daysLeft, hours, sleepHours, studyStartTime, phoneHours, paRatio, paScore };
   return { subjects, shared, warnings };
 }
 
@@ -373,34 +378,41 @@ function calcSharedAdjust(shared, avgImprovement){
   const daysFactor = Math.max(0.3, Math.min(1, shared.daysLeft / 30)); // 남은 기간이 짧을수록 공부시간 증가 효과를 줄임
   const studyAdjust = Math.max(-10, Math.min(10, (shared.hours - recommendedHours) * 2)) * daysFactor;
 
-  const [wh, wm] = shared.wakeTime.split(':').map(Number);
-  const wakeDecimal = wh + wm / 60;
-  const wakeAdjust = Math.max(-5, Math.min(5, (7 - wakeDecimal) * 2));
+  // 수면 부족(6시간 미만)과 과다 수면(9시간 초과) 둘 다 소폭 감점한다. (시간대가 아니라 '충분히 잤는가'만 본다)
+  let sleepAdjust = 0;
+  if (shared.sleepHours < 6) sleepAdjust = -Math.min(5, (6 - shared.sleepHours) * 2.5);
+  else if (shared.sleepHours > 9) sleepAdjust = -Math.min(5, (shared.sleepHours - 9) * 2.5);
 
   const phoneAdjust = -Math.max(0, Math.min(5, Math.max(0, shared.phoneHours - 1) * 2.5));
 
-  const effTable = { concept: 0, practice: 2, review: 5, pastexam: 7 };
-  const efficiencyAdjust = effTable[shared.efficiency] ?? 0;
-
   return {
-    recommendedHours, daysFactor, wakeDecimal,
-    studyAdjust, wakeAdjust, phoneAdjust, efficiencyAdjust,
-    total: studyAdjust + wakeAdjust + phoneAdjust + efficiencyAdjust
+    recommendedHours, daysFactor,
+    studyAdjust, sleepAdjust, phoneAdjust,
+    total: studyAdjust + sleepAdjust + phoneAdjust
   };
 }
 const TREND_ADJUST = { up: 5, steady: 0, down: -5 };
 const TREND_LABEL = { up: '상승 중', steady: '유지', down: '하락 중' };
 const EFFICIENCY_LABEL = { concept: '개념 학습', practice: '문제풀이', review: '오답복습', pastexam: '기출풀이' };
+const EFFICIENCY_ADJUST = { concept: 0, practice: 2, review: 5, pastexam: 7 };
+const EFFICIENCY_SCORE = { concept: 60, practice: 75, review: 90, pastexam: 95 };
+const EFFICIENCY_HINT = {
+  concept: '개념 학습 비중이 높습니다. 이해가 끝난 단원은 오답·기출 풀이로 넘어가 적용력을 높이세요.',
+  practice: '문제풀이 위주로 학습하고 있습니다. 틀린 문제를 오답노트로 남겨 복습하면 효율이 더 오릅니다.',
+  review: '오답복습 비중이 높아 학습 효율이 좋은 편입니다. 이 습관을 유지하세요.',
+  pastexam: '기출 위주 학습은 실전 감각을 높이는 데 가장 효율적인 방법입니다. 이 습관을 유지하세요.'
+};
 
-function calculateProbability(goal, sharedAdjust, trend){
+function calculateProbability(goal, sharedAdjust, trend, efficiency){
   const improvement = goal.mid - goal.neededFinal;
   const base = baseProbByJump(improvement);
   const trendAdjust = TREND_ADJUST[trend] ?? 0;
-  let prob = base + sharedAdjust.total + trendAdjust;
+  const efficiencyAdjust = EFFICIENCY_ADJUST[efficiency] ?? 0;
+  let prob = base + sharedAdjust.total + trendAdjust + efficiencyAdjust;
   if (goal.unreachable) prob = Math.min(prob, 9.5);
   if (goal.alreadySafe) prob = Math.max(prob, 75.5);
   prob = Math.max(0, Math.min(98, prob));
-  return { prob, base, improvement, trendAdjust };
+  return { prob, base, improvement, trendAdjust, efficiencyAdjust };
 }
 
 // ---------- 3. 과목별 개선 팁 & 대안 목표 ----------
@@ -413,34 +425,37 @@ function subjectTips(subject, goal, probResult){
   else tips.push(`<b>${subject.name}</b>는 현재 수준만 유지해도 목표 달성이 가능합니다. 남는 시간을 다른 과목에 배분해도 좋습니다.`);
   if (subject.trend === 'down') tips.push(`최근 <b>${subject.name}</b> 성적이 하락 추세입니다. 최근 시험에서 자주 틀린 유형을 다시 짚고 기본기부터 점검하세요.`);
   if (subject.trend === 'up') tips.push(`최근 <b>${subject.name}</b> 성적이 상승 추세입니다. 지금의 학습 방법을 그대로 유지하면서 자신감을 가지세요.`);
+  if (EFFICIENCY_HINT[subject.efficiency]) tips.push(`<b>${subject.name}</b>: ${EFFICIENCY_HINT[subject.efficiency]}`);
   return tips;
 }
 function altTargetsTable(subject, shared, sharedAdjust, startTarget){
   const rows = [];
   for (let t = startTarget; t <= Math.min(5, startTarget + 2); t++) {
     const g = calculateGoal({ mid: subject.mid, target: t }, shared);
-    const p = calculateProbability(g, sharedAdjust, subject.trend);
+    const p = calculateProbability(g, sharedAdjust, subject.trend, subject.efficiency);
     rows.push({ target: t, prob: p.prob, needed: g.neededFinal, unreachable: g.unreachable });
   }
   return rows;
 }
 
 // ---------- 4. 학습 습관 점수 ----------
-function calcHabitScore(shared, sharedAdjust){
+function calcHabitScore(shared, sharedAdjust, subjects){
   const studyScore = sharedAdjust.recommendedHours > 0
     ? Math.max(0, Math.min(100, Math.round((shared.hours / sharedAdjust.recommendedHours) * 100)))
     : 100;
-  // 늦은 기상뿐 아니라 지나치게 이른 기상(수면 부족 위험)도 감점해, 아래 생활습관 팁의 경고와 점수가 서로 어긋나지 않게 한다.
-  const wakePenalty = sharedAdjust.wakeDecimal > 7
-    ? (sharedAdjust.wakeDecimal - 7) * 15
-    : Math.max(0, 5.5 - sharedAdjust.wakeDecimal) * 15;
-  const wakeScore = Math.max(0, Math.min(100, Math.round(100 - wakePenalty)));
+  // 수면 부족(6시간 미만)뿐 아니라 과다 수면(9시간 초과)도 감점해, 아래 생활습관 팁의 경고와 점수가 서로 어긋나지 않게 한다.
+  let sleepPenalty = 0;
+  if (shared.sleepHours < 6) sleepPenalty = (6 - shared.sleepHours) * 20;
+  else if (shared.sleepHours > 9) sleepPenalty = (shared.sleepHours - 9) * 15;
+  const sleepScore = Math.max(0, Math.min(100, Math.round(100 - sleepPenalty)));
   const phoneScore = Math.max(0, Math.min(100, Math.round(100 - Math.max(0, shared.phoneHours - 1) * 15)));
-  const effScoreTable = { concept: 60, practice: 75, review: 90, pastexam: 95 };
-  const efficiencyScore = effScoreTable[shared.efficiency] ?? 60;
-  const overall = Math.round(studyScore * 0.35 + wakeScore * 0.2 + phoneScore * 0.2 + efficiencyScore * 0.25);
+  // 공부 방식(효율)은 이제 과목별 입력이라, 전체 과목 평균으로 종합 점수를 낸다.
+  const efficiencyScore = subjects.length
+    ? Math.round(subjects.reduce((s, sub) => s + (EFFICIENCY_SCORE[sub.efficiency] ?? 60), 0) / subjects.length)
+    : 60;
+  const overall = Math.round(studyScore * 0.35 + sleepScore * 0.2 + phoneScore * 0.2 + efficiencyScore * 0.25);
   const starCount = Math.max(0, Math.min(5, Math.round(overall / 20)));
-  return { studyScore, wakeScore, phoneScore, efficiencyScore, overall, starCount };
+  return { studyScore, sleepScore, phoneScore, efficiencyScore, overall, starCount };
 }
 function starString(n){ return "★".repeat(n) + "☆".repeat(5 - n); }
 
@@ -459,30 +474,25 @@ function globalTips(shared, sharedAdjust){
   } else {
     tips.push(`스마트폰 사용 시간(${shared.phoneHours.toFixed(1)}시간)은 잘 관리되고 있습니다.`);
   }
-  if (sharedAdjust.wakeDecimal > 7.5) {
-    tips.push(`기상 시간이 다소 늦은 편입니다. 취침 시간을 앞당겨 아침 학습 시간을 확보해보세요.`);
-  } else if (sharedAdjust.wakeDecimal < 5.5) {
-    tips.push(`기상 시간이 매우 이릅니다. 최소 6~7시간 수면을 확보해 집중력 저하를 예방하세요.`);
+  if (shared.sleepHours < 6) {
+    tips.push(`수면 시간이 하루 <b>${shared.sleepHours.toFixed(1)}시간</b>으로 부족합니다. 최소 6시간 이상 확보해 집중력 저하를 예방하세요.`);
+  } else if (shared.sleepHours > 9) {
+    tips.push(`수면 시간이 다소 깁니다(${shared.sleepHours.toFixed(1)}시간). 무리하지 않는 선에서 조금씩 줄이면 학습 시간을 더 확보할 수 있습니다.`);
   }
-  const effHint = {
-    concept: '개념 학습 비중이 높습니다. 이해가 끝난 단원은 오답·기출 풀이로 넘어가 적용력을 높이세요.',
-    practice: '문제풀이 위주로 학습하고 있습니다. 틀린 문제를 오답노트로 남겨 복습하면 효율이 더 오릅니다.',
-    review: '오답복습 비중이 높아 학습 효율이 좋은 편입니다. 이 습관을 유지하세요.',
-    pastexam: '기출 위주 학습은 실전 감각을 높이는 데 가장 효율적인 방법입니다. 이 습관을 유지하세요.'
-  };
-  if (effHint[shared.efficiency]) tips.push(effHint[shared.efficiency]);
   if (shared.daysLeft <= 14) {
     tips.push(`시험까지 <b>${shared.daysLeft}일</b>밖에 남지 않아, 지금부터 공부 시간을 늘려도 성적 향상 효과는 제한적입니다. 새 개념보다 <b>오답·요약 복습</b>에 집중하는 것이 효율적입니다.`);
   }
   return tips;
 }
 function generateAiComment(shared, sharedAdjust, habitScore, subjectResults){
-  const scores = { study: habitScore.studyScore, wake: habitScore.wakeScore, phone: habitScore.phoneScore, efficiency: habitScore.efficiencyScore };
+  const scores = { study: habitScore.studyScore, sleep: habitScore.sleepScore, phone: habitScore.phoneScore, efficiency: habitScore.efficiencyScore };
   const weakestKey = Object.keys(scores).reduce((a, b) => scores[a] <= scores[b] ? a : b);
-  const labels = { study: '공부시간', wake: '기상 습관', phone: '스마트폰 사용', efficiency: '공부 방식(효율)' };
+  const labels = { study: '공부시간', sleep: '수면 습관', phone: '스마트폰 사용', efficiency: '공부 방식(효율)' };
   const advice = {
     study: `권장 공부시간(${sharedAdjust.recommendedHours.toFixed(1)}시간)에 맞춰 순공 시간을 늘리면 확률이 눈에 띄게 올라갑니다.`,
-    wake: `기상 시간을 조금 더 앞당기면 아침 학습 시간을 추가로 확보할 수 있습니다.`,
+    sleep: shared.sleepHours < 6
+      ? `수면 시간을 6시간 이상으로 늘리면 집중력과 학습 효율이 함께 올라갑니다.`
+      : `수면 시간이 다소 깁니다. 무리하지 않는 선에서 조금 줄이면 학습 시간을 더 확보할 수 있습니다.`,
     phone: `스마트폰 사용을 하루 1시간 정도만 줄여도 확률이 크게 개선됩니다.`,
     efficiency: `단순 개념 학습보다 오답복습·기출풀이 비중을 늘리면 같은 시간으로도 효율이 높아집니다.`
   };
@@ -584,9 +594,9 @@ function buildResultHtml(data){
         <ul class="tips">
           <li>기준 확률 (등급 ${probResult.improvement <= 0 ? "유지" : probResult.improvement + "단계 상승"}): ${probResult.base.toFixed(2)}%</li>
           <li>공부시간 보정: <b>${sign(sharedAdjust.studyAdjust)}%p</b></li>
-          <li>기상 시간 보정: <b>${sign(sharedAdjust.wakeAdjust)}%p</b></li>
+          <li>수면 시간 보정: <b>${sign(sharedAdjust.sleepAdjust)}%p</b></li>
           <li>스마트폰 사용 보정: <b>${sign(sharedAdjust.phoneAdjust)}%p</b></li>
-          <li>학습 효율 보정: <b>${sign(sharedAdjust.efficiencyAdjust)}%p</b></li>
+          <li>이 과목 공부 방식 보정: <b>${sign(probResult.efficiencyAdjust)}%p</b></li>
           <li>최근 성적 추이 보정: <b>${sign(probResult.trendAdjust)}%p</b></li>
         </ul>
         ${probResult.prob < 45 ? `<p class="muted">목표 달성 확률이 낮아 아래처럼 대안 목표도 함께 계산했습니다.</p>${altHtml}` : ""}
@@ -601,9 +611,9 @@ function buildResultHtml(data){
 
   const habitBars = [
     ["공부시간", habitScore.studyScore],
-    ["기상 습관", habitScore.wakeScore],
+    ["수면 습관", habitScore.sleepScore],
     ["스마트폰", habitScore.phoneScore],
-    ["학습 효율", habitScore.efficiencyScore]
+    ["학습 효율(평균)", habitScore.efficiencyScore]
   ].map(([label, score]) => `
     <div class="score-row"><span>${label}</span><span>${score}점</span></div>
     <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${score}%;background:${barColorFor(score)}"></div></div>
@@ -661,13 +671,13 @@ function analyze(){
 
   const subjectResults = subjects.map((subject, i) => {
     const goal = goals[i];
-    const probResult = calculateProbability(goal, sharedAdjust, subject.trend);
+    const probResult = calculateProbability(goal, sharedAdjust, subject.trend, subject.efficiency);
     const tips = subjectTips(subject, goal, probResult);
     const alt = probResult.prob < 45 ? altTargetsTable(subject, shared, sharedAdjust, goal.target) : null;
     return { subject, goal, probResult, tips, alt };
   });
 
-  const habitScore = calcHabitScore(shared, sharedAdjust);
+  const habitScore = calcHabitScore(shared, sharedAdjust, subjects);
   const aiComment = generateAiComment(shared, sharedAdjust, habitScore, subjectResults);
   const schedule = generateSchedule(shared, subjectResults);
 
@@ -688,6 +698,7 @@ function buildGeminiPayload(subjectResults, shared, habitScore, sharedAdjust){
       mid: r.subject.mid,
       target: r.subject.target,
       trend: TREND_LABEL[r.subject.trend],
+      efficiency: EFFICIENCY_LABEL[r.subject.efficiency] || r.subject.efficiency,
       neededFinal: r.goal.neededFinal,
       unreachable: r.goal.unreachable,
       probability: Number(r.probResult.prob.toFixed(1))
@@ -696,14 +707,13 @@ function buildGeminiPayload(subjectResults, shared, habitScore, sharedAdjust){
       daysLeft: shared.daysLeft,
       studyHours: shared.hours,
       recommendedHours: Number(sharedAdjust.recommendedHours.toFixed(1)),
-      wakeTime: shared.wakeTime,
-      phoneHours: shared.phoneHours,
-      efficiency: EFFICIENCY_LABEL[shared.efficiency] || shared.efficiency
+      sleepHours: shared.sleepHours,
+      phoneHours: shared.phoneHours
     },
     habitScore: {
       overall: habitScore.overall,
       study: habitScore.studyScore,
-      wake: habitScore.wakeScore,
+      sleep: habitScore.sleepScore,
       phone: habitScore.phoneScore,
       efficiency: habitScore.efficiencyScore
     }
