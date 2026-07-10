@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기말고사 목표 전략 컨설턴트</title>
+<style>
+  :root{
+    --bg:#f5f6fa; --card:#ffffff; --ink:#1f2430; --sub:#5b6270;
+    --line:#e4e6ec; --accent:#3d5afe; --accent-soft:#eef0ff;
+    --good:#1a9e6b; --warn:#e0972a; --bad:#e0483e; --star:#f0a63c; --warn-soft:#fdeceb; --info-soft:#fdf3e6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#15171e; --card:#1d202a; --ink:#eceef3; --sub:#9aa1b2;
+      --line:#2b2f3b; --accent:#7c8bff; --accent-soft:#242a45;
+      --good:#4fd39a; --warn:#f0b45b; --bad:#f2695f; --star:#ffc966; --warn-soft:#3a2321; --info-soft:#3a301c; }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    padding:32px 16px; line-height:1.55;}
+  .wrap{max-width:820px;margin:0 auto;}
+  h1{font-size:1.5rem;margin:0 0 4px;}
+  .lead{color:var(--sub);margin:0 0 24px;font-size:0.92rem;}
+  h3{font-size:0.95rem;margin:0 0 10px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:24px;margin-bottom:20px;}
+  label{display:block;font-weight:600;font-size:0.88rem;margin-bottom:6px;}
+  .hint{color:var(--sub);font-size:0.78rem;margin:-4px 0 10px;}
+  select,input,textarea{width:100%;padding:10px 12px;border-radius:10px;
+    border:1px solid var(--line);background:var(--bg);color:var(--ink);
+    font-size:0.92rem;font-family:inherit;margin-bottom:16px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:560px){.row{grid-template-columns:1fr;}}
+  button{width:100%;padding:13px;border:none;border-radius:12px;
+    background:var(--accent);color:#fff;font-size:1rem;font-weight:700;
+    cursor:pointer;}
+  button:hover{opacity:0.92;}
+  .secondary-btn{background:var(--accent-soft);color:var(--accent);margin-bottom:4px;}
+  .remove-btn{background:var(--bad);color:#fff;padding:10px;font-size:0.8rem;font-weight:600;
+    border:none;border-radius:10px;cursor:pointer;white-space:nowrap;margin-bottom:0;}
+  #result{display:none;}
+  .result-card h2{font-size:1.05rem;margin:0 0 12px;display:flex;align-items:center;gap:8px;}
+  .prob-bar-track{background:var(--line);border-radius:999px;height:14px;overflow:hidden;margin:10px 0;}
+  .prob-bar-fill{height:100%;border-radius:999px;transition:width .4s ease;}
+  .mini-bar-track{background:var(--line);border-radius:999px;height:9px;overflow:hidden;margin:4px 0 12px;}
+  .mini-bar-fill{height:100%;border-radius:999px;}
+  .prob-num{font-size:1.7rem;font-weight:800;}
+  ul.tips{margin:8px 0 0;padding-left:20px;}
+  ul.tips li{margin-bottom:8px;font-size:0.92rem;}
+  .muted{color:var(--sub);font-size:0.85rem;}
+  .divider{border:none;border-top:1px solid var(--line);margin:16px 0;}
+  .grade-need{font-size:1.1rem;font-weight:700;color:var(--accent);}
+  .subject-row{border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--bg);}
+  .subject-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr auto;gap:10px;align-items:end;}
+  .subject-grid label{font-size:0.72rem;margin-bottom:4px;}
+  .subject-grid select,.subject-grid input{margin-bottom:0;}
+  .subjectName.invalid{border-color:var(--bad);}
+  @media (max-width:640px){.subject-grid{grid-template-columns:1fr 1fr;}}
+  .subcard{border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;background:var(--bg);}
+  .subcard h3{font-size:1rem;display:flex;align-items:center;gap:8px;justify-content:space-between;}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:0.72rem;font-weight:700;
+    background:var(--accent-soft);color:var(--accent);}
+  table.mini-table{width:100%;border-collapse:collapse;font-size:0.85rem;margin-top:8px;}
+  table.mini-table th,table.mini-table td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;}
+  table.mini-table th{color:var(--sub);font-weight:600;font-size:0.75rem;}
+  .stars{color:var(--star);font-size:1.4rem;letter-spacing:2px;}
+  .score-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;font-size:0.85rem;}
+  .ai-comment{background:var(--accent-soft);border-radius:12px;padding:16px;font-size:0.92rem;color:var(--ink);}
+  .warn-box{background:var(--warn-soft);border:1px solid var(--bad);color:var(--bad);
+    padding:10px 12px;border-radius:10px;font-weight:600;font-size:0.88rem;margin:0 0 12px;}
+  .info-box{background:var(--info-soft);border:1px solid var(--warn);color:var(--warn);
+    padding:10px 12px;border-radius:10px;font-weight:600;font-size:0.88rem;margin:0 0 12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎯 기말고사 목표 전략 컨설턴트</h1>
+  <p class="lead">과목별 목표, 남은 기간, 생활 습관을 종합해 필요 등급 · 달성 확률 · 개선 전략을 계산해드립니다.</p>
+
+  <div class="card">
+    <h3>📚 과목별 목표 설정</h3>
+    <div id="subjectList"></div>
+    <div id="subjectNameWarn" class="warn-box" style="display:none;"></div>
+    <button type="button" class="secondary-btn" id="addSubjectBtn">+ 과목 추가</button>
+  </div>
+
+  <div class="card">
+    <h3>🗓️ 공통 학습 조건</h3>
+    <div class="row">
+      <div>
+        <label for="daysLeft">시험까지 남은 기간 (일)</label>
+        <input type="number" id="daysLeft" min="1" max="200" step="1" value="30">
+      </div>
+      <div>
+        <label for="hours">하루 평균 순공 시간 (시간)</label>
+        <input type="number" id="hours" min="0" max="20" step="0.5" value="3">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="wakeTime">기상 시간</label>
+        <input type="time" id="wakeTime" value="07:00">
+      </div>
+      <div>
+        <label for="phoneHours">하루 스마트폰 사용 시간 (시간)</label>
+        <input type="number" id="phoneHours" min="0" max="14" step="0.5" value="2">
+      </div>
+    </div>
+
+    <label for="studyStartTime">집중 학습(자율학습) 시작 시간</label>
+    <div class="hint">추천 시간표가 이 시간부터 배치됩니다. 오전/오후에 주로 공부한다면 그 시간으로 바꿔주세요.</div>
+    <input type="time" id="studyStartTime" value="19:00">
+
+    <label for="efficiency">오늘 공부 대부분은?</label>
+    <select id="efficiency">
+      <option value="concept">개념 학습</option>
+      <option value="practice" selected>문제풀이</option>
+      <option value="review">오답복습</option>
+      <option value="pastexam">기출풀이</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label for="paRatio">수행평가 반영 비율 (%, 모르면 0)</label>
+        <input type="number" id="paRatio" min="0" max="80" step="5" value="0">
+      </div>
+      <div>
+        <label for="paScore">예상 수행평가 점수 (100점 만점)</label>
+        <input type="number" id="paScore" min="0" max="100" step="1" value="90">
+      </div>
+    </div>
+
+    <button onclick="analyze()">분석하기</button>
+  </div>
+
+  <div id="result">
+    <div id="resultContent"></div>
+  </div>
+</div>
+
+<script>
+// ---------- 공통 유틸 ----------
+function gradeLabel(g){ return g + "등급"; }
+function sign(n){ return (n >= 0 ? "+" : "") + n.toFixed(2); }
+function barColorFor(p){ return p >= 70 ? "var(--good)" : p >= 40 ? "var(--warn)" : "var(--bad)"; }
+function probLabel(p){
+  if (p < 20) return "매우 낮음 — 지금 패턴을 유지하면 목표 달성이 어렵습니다";
+  if (p < 40) return "낮음 — 상당한 노력과 습관 개선이 필요합니다";
+  if (p < 60) return "보통 — 개선하면 충분히 노려볼 수 있는 수준입니다";
+  if (p < 80) return "높음 — 현재 페이스를 유지하면 달성 가능성이 큽니다";
+  return "매우 높음 — 목표를 상향 조정해도 좋은 수준입니다";
+}
+function scoreToGrade(score){
+  if (score >= 90) return 1;
+  if (score >= 80) return 2;
+  if (score >= 70) return 3;
+  if (score >= 60) return 4;
+  return 5;
+}
+function addMinutes(hhmm, mins){
+  const [h, m] = hhmm.split(':').map(Number);
+  let total = ((h * 60 + m + mins) % 1440 + 1440) % 1440;
+  const nh = Math.floor(total / 60), nm = total % 60;
+  return String(nh).padStart(2, '0') + ':' + String(nm).padStart(2, '0');
+}
+
+// ---------- 과목 입력 UI ----------
+let subjectCounter = 0;
+function gradeOptions(selected){
+  let html = "";
+  for (let g = 1; g <= 5; g++) html += `<option value="${g}" ${g === selected ? "selected" : ""}>${g}등급</option>`;
+  return html;
+}
+function addSubjectRow(name, mid, target, trend){
+  subjectCounter++;
+  const id = "subj_" + subjectCounter;
+  const wrap = document.createElement('div');
+  wrap.className = 'subject-row';
+  wrap.dataset.id = id;
+  wrap.innerHTML = `
+    <div class="subject-grid">
+      <div><label>과목명</label><input type="text" class="subjectName" value="${name}" placeholder="예: 수학"></div>
+      <div><label>중간 등급</label><select class="subjectMid">${gradeOptions(mid)}</select></div>
+      <div><label>목표 등급</label><select class="subjectTarget">${gradeOptions(target)}</select></div>
+      <div><label>최근 성적 추이</label>
+        <select class="subjectTrend">
+          <option value="up" ${trend === 'up' ? 'selected' : ''}>상승 중</option>
+          <option value="steady" ${trend === 'steady' ? 'selected' : ''}>유지</option>
+          <option value="down" ${trend === 'down' ? 'selected' : ''}>하락 중</option>
+        </select>
+      </div>
+      <div><label>&nbsp;</label><button type="button" class="remove-btn" onclick="removeSubjectRow('${id}')">삭제</button></div>
+    </div>`;
+  document.getElementById('subjectList').appendChild(wrap);
+}
+function removeSubjectRow(id){
+  const rows = document.querySelectorAll('.subject-row');
+  if (rows.length <= 1) return;
+  document.querySelector(`.subject-row[data-id="${id}"]`).remove();
+}
+document.getElementById('addSubjectBtn').addEventListener('click', () => addSubjectRow('', 2, 1, 'steady'));
+addSubjectRow('국어', 2, 1, 'steady');
+
+// 과목명을 입력하면 실시간으로 경고 표시를 지워준다
+document.getElementById('subjectList').addEventListener('input', (e) => {
+  if (e.target.classList.contains('subjectName') && e.target.value.trim() !== '') {
+    e.target.classList.remove('invalid');
+  }
+});
+
+// 분석 전 과목명이 비어있는지 확인하고, 비어있으면 안내 후 분석을 진행하지 않는다
+function validateSubjectNames(){
+  const warnEl = document.getElementById('subjectNameWarn');
+  let firstEmpty = null;
+  document.querySelectorAll('.subject-row').forEach(row => {
+    const input = row.querySelector('.subjectName');
+    const empty = input.value.trim() === '';
+    input.classList.toggle('invalid', empty);
+    if (empty && !firstEmpty) firstEmpty = input;
+  });
+  if (firstEmpty) {
+    warnEl.textContent = '⚠ 과목 이름이 비어있습니다. 분석하기 전에 모든 과목의 이름을 입력해주세요.';
+    warnEl.style.display = 'block';
+    firstEmpty.focus();
+    firstEmpty.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+  }
+  warnEl.style.display = 'none';
+  return true;
+}
+
+// ---------- 입력 수집 & 검증 ----------
+// 비어있거나 숫자가 아닌 값이 들어와도 프로그램이 멈추지 않도록 항상 안전한 기본값으로 대체하고,
+// 무엇을 왜 보정했는지 warnings 배열에 담아 사용자에게 그대로 보여준다.
+function parseNumInput(id, fallback, min, max, label, warnings){
+  const raw = document.getElementById(id).value.trim();
+  const num = parseFloat(raw);
+  if (raw === '' || !Number.isFinite(num)) {
+    warnings.push(`"${label}" 값이 비어있거나 올바르지 않아 기본값(${fallback})으로 처리했습니다.`);
+    return fallback;
+  }
+  const clamped = Math.max(min, Math.min(max, num));
+  if (clamped !== num) {
+    warnings.push(`"${label}" 값이 허용 범위(${min}~${max})를 벗어나 ${clamped}(으)로 보정했습니다.`);
+  }
+  return clamped;
+}
+function parseTimeInput(id, fallback, label, warnings){
+  const raw = document.getElementById(id).value;
+  if (!/^\d{2}:\d{2}$/.test(raw)) {
+    warnings.push(`"${label}" 값이 비어있거나 올바르지 않아 기본값(${fallback})으로 처리했습니다.`);
+    return fallback;
+  }
+  return raw;
+}
+function getInputData(){
+  const warnings = [];
+  const subjects = [];
+  document.querySelectorAll('.subject-row').forEach((row, idx) => {
+    const rawName = row.querySelector('.subjectName').value.trim();
+    const name = rawName || `과목 ${idx + 1}`; // 이름을 비워두면 순번을 붙여 결과 카드가 서로 구분되게 한다
+    let mid = parseInt(row.querySelector('.subjectMid').value, 10);
+    let target = parseInt(row.querySelector('.subjectTarget').value, 10);
+    if (!Number.isFinite(mid)) mid = 2;
+    if (!Number.isFinite(target)) target = 1;
+    mid = Math.max(1, Math.min(5, mid));
+    target = Math.max(1, Math.min(5, target));
+    const rawTrend = row.querySelector('.subjectTrend').value;
+    const trend = ['up', 'steady', 'down'].includes(rawTrend) ? rawTrend : 'steady';
+    subjects.push({ name, mid, target, trend });
+  });
+
+  const daysLeft = parseNumInput('daysLeft', 30, 1, 200, '시험까지 남은 기간', warnings);
+  const hours = parseNumInput('hours', 0, 0, 20, '하루 평균 순공 시간', warnings);
+  let phoneHours = parseNumInput('phoneHours', 0, 0, 14, '하루 스마트폰 사용 시간', warnings);
+  // 순공 시간과 폰 사용 시간은 각각 24시간을 넘을 수 없고(위에서 이미 20/14시간으로 제한됨),
+  // 둘을 합쳐도 하루 24시간을 넘을 수 없다. 넘으면 스마트폰 사용 시간을 줄여 맞춘다.
+  if (hours + phoneHours > 24) {
+    const adjustedPhone = Math.max(0, 24 - hours);
+    warnings.push(`"하루 순공 시간"과 "하루 스마트폰 사용 시간"의 합이 24시간을 넘어, 스마트폰 사용 시간을 ${adjustedPhone.toFixed(1)}시간으로 보정했습니다.`);
+    phoneHours = adjustedPhone;
+  }
+  const wakeTime = parseTimeInput('wakeTime', '07:00', '기상 시간', warnings);
+  const studyStartTime = parseTimeInput('studyStartTime', '19:00', '집중 학습 시작 시간', warnings);
+
+  const rawEfficiency = document.getElementById('efficiency').value;
+  const efficiency = ['concept', 'practice', 'review', 'pastexam'].includes(rawEfficiency) ? rawEfficiency : 'practice';
+
+  // 수행평가: 비율과 점수가 "둘 다" 유효할 때만 반영한다. 점수만 비어있다고 최악(5등급)으로 취급하지 않는다.
+  const paRatioRaw = document.getElementById('paRatio').value.trim();
+  const paRatioNum = parseFloat(paRatioRaw);
+  const paRatioProvided = paRatioRaw !== '' && Number.isFinite(paRatioNum) && paRatioNum > 0;
+  if (paRatioProvided && paRatioNum > 80) {
+    warnings.push('"수행평가 반영 비율"은 최대 80%까지만 반영되어 80%로 보정했습니다.');
+  }
+  const paScoreRaw = document.getElementById('paScore').value.trim();
+  const paScoreNum = parseFloat(paScoreRaw);
+  const paScoreProvided = paScoreRaw !== '' && Number.isFinite(paScoreNum);
+
+  let paRatio = paRatioProvided ? Math.max(0, Math.min(80, paRatioNum)) : 0;
+  let paScore = paScoreProvided ? Math.max(0, Math.min(100, paScoreNum)) : 90;
+  if (paRatioProvided && !paScoreProvided) {
+    warnings.push('"예상 수행평가 점수"를 입력하지 않아 이번 계산에서는 수행평가 반영을 생략했습니다.');
+    paRatio = 0;
+  }
+
+  const shared = { daysLeft, hours, wakeTime, studyStartTime, phoneHours, efficiency, paRatio, paScore };
+  return { subjects, shared, warnings };
+}
+
+// ---------- 1. 목표 등급 계산 ----------
+// 평균 = 중간*midW + 기말*finalW + 수행평가등급*paW, 이 평균이 target+0.5 미만이면 target 등급(또는 그 이상) 확보.
+// 수행평가 반영비율(paRatio)이 0이면 중간/기말이 각 50%씩인 기존 방식과 완전히 동일하다.
+function calculateGoal(subject, shared){
+  const mid = subject.mid;
+  const originalTarget = subject.target;
+  const inverted = originalTarget > mid; // 목표가 현재 중간고사보다 낮은(=더 나쁜) 등급인 역전 상태
+  const target = inverted ? mid : originalTarget; // 역전 시 목표를 현재 등급으로 자동 보정해 계산이 깨지지 않게 한다
+  const alreadyAtCeiling = mid === originalTarget && mid === 1; // 중간·목표 모두 이미 최고 등급(1등급)인 경우
+
+  const paRatio = Math.min(80, Math.max(0, shared.paRatio));
+  const paW = paRatio / 100;
+  const examW = 1 - paW;
+  const midW = examW / 2, finalW = examW / 2;
+  const paGrade = scoreToGrade(shared.paScore);
+  const bound = (target + 0.5 - midW * mid - paW * paGrade) / finalW;
+  const neededFinalRaw = Math.floor(bound - 1e-9);
+  const neededFinal = Math.max(1, Math.min(5, neededFinalRaw));
+  return {
+    mid, target, originalTarget, inverted, alreadyAtCeiling,
+    neededFinal, neededFinalRaw,
+    unreachable: neededFinalRaw < 1,
+    alreadySafe: neededFinalRaw > 5,
+    paRatio, paGrade
+  };
+}
+function buildGuideText(goal){
+  const { mid, target, originalTarget, inverted, alreadyAtCeiling, neededFinal, unreachable, alreadySafe } = goal;
+
+  let warning = "";
+  if (inverted) {
+    warning = `<p class="info-box">⚠ 목표 등급(${gradeLabel(originalTarget)})이 현재 중간고사 등급(${gradeLabel(mid)})보다 낮습니다. 이미 중간고사에서 목표보다 좋은 성적을 받은 상태이니 목표를 다시 확인해주세요. 아래 계산은 목표를 현재 등급인 <b>${gradeLabel(mid)}</b>로 자동 보정해 진행했습니다.</p>`;
+  }
+
+  let body;
+  if (alreadyAtCeiling) {
+    body = `<p>이미 최고 등급인 <b>1등급</b>을 중간·목표 등급 모두로 설정하셨습니다. 더 올라갈 등급이 없으므로 이번 기말고사의 목표는 <b>1등급 유지</b>입니다. 사소한 실수로 등급이 떨어지지 않도록 검산·시간 관리에 집중하세요.</p>`;
+  } else if (unreachable) {
+    body = `<p>현재 중간고사 <b>${gradeLabel(mid)}</b>${goal.paRatio > 0 ? " (수행평가 반영 포함)" : ""}로는 기말고사에서 만점(1등급)을 받아도 목표 최종 <b>${gradeLabel(target)}</b> 달성이 수치상 어렵습니다. 아래 대안 목표를 참고해 현실적인 목표로 조정해보세요.</p>`;
+  } else if (alreadySafe) {
+    body = `<p>현재 중간고사 <b>${gradeLabel(mid)}</b>만으로도 목표 최종 <b>${gradeLabel(target)}</b> 달성이 사실상 확보되어 있습니다. 기말에서 최악의 경우(5등급)를 받아도 목표를 지킬 수 있습니다.</p>`;
+  } else {
+    if (neededFinal === 1) {
+      body = `<p>목표 최종 <b>${gradeLabel(target)}</b>을 위해 이번 기말고사에서 무조건 <b>${gradeLabel(neededFinal)}</b>이 필요합니다. 더 이상의 등급 여유가 없으므로 확실한 ${gradeLabel(neededFinal)}을 목표로 잡아보세요.</p>`;
+    } else {
+      const stretch = Math.max(1, neededFinal - 1);
+      body = `<p>목표 최종 <b>${gradeLabel(target)}</b>를 위해 이번 기말고사에서 최소 <span class="grade-need">${gradeLabel(neededFinal)}</span> 이상이 필요합니다. 여유 있게 노린다면 <b>${gradeLabel(stretch)}~${gradeLabel(neededFinal)}</b>을 목표로 잡아보세요.</p>`;
+    }
+  }
+  return warning + body;
+}
+
+// ---------- 2. 확률 계산 ----------
+// 기준 확률은 "등급을 몇 단계 올려야 하는가"로 결정하고, 생활습관·난이도·효율은 그 위에 소폭(±5~10%p)만 가감한다.
+function baseProbByJump(improvement){
+  if (improvement <= 0) return 85;
+  const table = { 1: 60, 2: 35, 3: 15, 4: 5 };
+  return table[improvement] ?? 5;
+}
+function calcSharedAdjust(shared, avgImprovement){
+  const recommendedHours = 3 + Math.max(0, avgImprovement) * 1.85;
+  const daysFactor = Math.max(0.3, Math.min(1, shared.daysLeft / 30)); // 남은 기간이 짧을수록 공부시간 증가 효과를 줄임
+  const studyAdjust = Math.max(-10, Math.min(10, (shared.hours - recommendedHours) * 2)) * daysFactor;
+
+  const [wh, wm] = shared.wakeTime.split(':').map(Number);
+  const wakeDecimal = wh + wm / 60;
+  const wakeAdjust = Math.max(-5, Math.min(5, (7 - wakeDecimal) * 2));
+
+  const phoneAdjust = -Math.max(0, Math.min(5, Math.max(0, shared.phoneHours - 1) * 2.5));
+
+  const effTable = { concept: 0, practice: 2, review: 5, pastexam: 7 };
+  const efficiencyAdjust = effTable[shared.efficiency] ?? 0;
+
+  return {
+    recommendedHours, daysFactor, wakeDecimal,
+    studyAdjust, wakeAdjust, phoneAdjust, efficiencyAdjust,
+    total: studyAdjust + wakeAdjust + phoneAdjust + efficiencyAdjust
+  };
+}
+const TREND_ADJUST = { up: 5, steady: 0, down: -5 };
+const TREND_LABEL = { up: '상승 중', steady: '유지', down: '하락 중' };
+
+function calculateProbability(goal, sharedAdjust, trend){
+  const improvement = goal.mid - goal.neededFinal;
+  const base = baseProbByJump(improvement);
+  const trendAdjust = TREND_ADJUST[trend] ?? 0;
+  let prob = base + sharedAdjust.total + trendAdjust;
+  if (goal.unreachable) prob = Math.min(prob, 9.5);
+  if (goal.alreadySafe) prob = Math.max(prob, 75.5);
+  prob = Math.max(0, Math.min(98, prob));
+  return { prob, base, improvement, trendAdjust };
+}
+
+// ---------- 3. 과목별 개선 팁 & 대안 목표 ----------
+function subjectTips(subject, goal, probResult){
+  const tips = [];
+  const imp = probResult.improvement;
+  if (imp >= 3) tips.push(`<b>${subject.name}</b>는 ${imp}등급 이상 상승이 필요해 난이도가 매우 높습니다. 다른 과목보다 기출·오답 비중을 확실히 높게 배분하세요.`);
+  else if (imp === 2) tips.push(`<b>${subject.name}</b>는 2등급 상승이 필요합니다. 취약 단원을 좁혀 오답 위주로 반복하는 것이 효율적입니다.`);
+  else if (imp === 1) tips.push(`<b>${subject.name}</b>는 1등급 상승이 필요합니다. 현재 방식을 유지하며 실수 줄이기에 집중하세요.`);
+  else tips.push(`<b>${subject.name}</b>는 현재 수준만 유지해도 목표 달성이 가능합니다. 남는 시간을 다른 과목에 배분해도 좋습니다.`);
+  if (subject.trend === 'down') tips.push(`최근 <b>${subject.name}</b> 성적이 하락 추세입니다. 최근 시험에서 자주 틀린 유형을 다시 짚고 기본기부터 점검하세요.`);
+  if (subject.trend === 'up') tips.push(`최근 <b>${subject.name}</b> 성적이 상승 추세입니다. 지금의 학습 방법을 그대로 유지하면서 자신감을 가지세요.`);
+  return tips;
+}
+function altTargetsTable(subject, shared, sharedAdjust, startTarget){
+  const rows = [];
+  for (let t = startTarget; t <= Math.min(5, startTarget + 2); t++) {
+    const g = calculateGoal({ mid: subject.mid, target: t }, shared);
+    const p = calculateProbability(g, sharedAdjust, subject.trend);
+    rows.push({ target: t, prob: p.prob, needed: g.neededFinal, unreachable: g.unreachable });
+  }
+  return rows;
+}
+
+// ---------- 4. 학습 습관 점수 ----------
+function calcHabitScore(shared, sharedAdjust){
+  const studyScore = sharedAdjust.recommendedHours > 0
+    ? Math.max(0, Math.min(100, Math.round((shared.hours / sharedAdjust.recommendedHours) * 100)))
+    : 100;
+  // 늦은 기상뿐 아니라 지나치게 이른 기상(수면 부족 위험)도 감점해, 아래 생활습관 팁의 경고와 점수가 서로 어긋나지 않게 한다.
+  const wakePenalty = sharedAdjust.wakeDecimal > 7
+    ? (sharedAdjust.wakeDecimal - 7) * 15
+    : Math.max(0, 5.5 - sharedAdjust.wakeDecimal) * 15;
+  const wakeScore = Math.max(0, Math.min(100, Math.round(100 - wakePenalty)));
+  const phoneScore = Math.max(0, Math.min(100, Math.round(100 - Math.max(0, shared.phoneHours - 1) * 15)));
+  const effScoreTable = { concept: 60, practice: 75, review: 90, pastexam: 95 };
+  const efficiencyScore = effScoreTable[shared.efficiency] ?? 60;
+  const overall = Math.round(studyScore * 0.35 + wakeScore * 0.2 + phoneScore * 0.2 + efficiencyScore * 0.25);
+  const starCount = Math.max(0, Math.min(5, Math.round(overall / 20)));
+  return { studyScore, wakeScore, phoneScore, efficiencyScore, overall, starCount };
+}
+function starString(n){ return "★".repeat(n) + "☆".repeat(5 - n); }
+
+// ---------- 5. 공통 생활습관 팁 & AI 종합 코멘트 ----------
+function globalTips(shared, sharedAdjust){
+  const tips = [];
+  const hourGap = Math.max(0, sharedAdjust.recommendedHours - shared.hours);
+  if (hourGap > 0) {
+    tips.push(`전체 과목의 등급 상승 폭을 고려하면 하루 순공 시간을 최소 <b>${hourGap.toFixed(1)}시간</b> 더 늘리는 것이 좋습니다. (현재 ${shared.hours.toFixed(1)}시간 → 권장 ${sharedAdjust.recommendedHours.toFixed(1)}시간)`);
+  } else {
+    tips.push(`현재 공부 시간(${shared.hours.toFixed(1)}시간)은 권장량(${sharedAdjust.recommendedHours.toFixed(1)}시간)을 충족합니다. 시간보다 <b>학습 밀도</b>를 높이는 데 집중하세요.`);
+  }
+  if (shared.phoneHours > 1) {
+    const cut = Math.min(shared.phoneHours - 1, shared.phoneHours * 0.5);
+    tips.push(`스마트폰 사용 시간이 <b>${shared.phoneHours.toFixed(1)}시간</b>입니다. <b>${cut.toFixed(1)}시간</b>만 줄여도 그 시간을 오답복습에 바로 투입할 수 있습니다.`);
+  } else {
+    tips.push(`스마트폰 사용 시간(${shared.phoneHours.toFixed(1)}시간)은 잘 관리되고 있습니다.`);
+  }
+  if (sharedAdjust.wakeDecimal > 7.5) {
+    tips.push(`기상 시간이 다소 늦은 편입니다. 취침 시간을 앞당겨 아침 학습 시간을 확보해보세요.`);
+  } else if (sharedAdjust.wakeDecimal < 5.5) {
+    tips.push(`기상 시간이 매우 이릅니다. 최소 6~7시간 수면을 확보해 집중력 저하를 예방하세요.`);
+  }
+  const effHint = {
+    concept: '개념 학습 비중이 높습니다. 이해가 끝난 단원은 오답·기출 풀이로 넘어가 적용력을 높이세요.',
+    practice: '문제풀이 위주로 학습하고 있습니다. 틀린 문제를 오답노트로 남겨 복습하면 효율이 더 오릅니다.',
+    review: '오답복습 비중이 높아 학습 효율이 좋은 편입니다. 이 습관을 유지하세요.',
+    pastexam: '기출 위주 학습은 실전 감각을 높이는 데 가장 효율적인 방법입니다. 이 습관을 유지하세요.'
+  };
+  if (effHint[shared.efficiency]) tips.push(effHint[shared.efficiency]);
+  if (shared.daysLeft <= 14) {
+    tips.push(`시험까지 <b>${shared.daysLeft}일</b>밖에 남지 않아, 지금부터 공부 시간을 늘려도 성적 향상 효과는 제한적입니다. 새 개념보다 <b>오답·요약 복습</b>에 집중하는 것이 효율적입니다.`);
+  }
+  return tips;
+}
+function generateAiComment(shared, sharedAdjust, habitScore, subjectResults){
+  const scores = { study: habitScore.studyScore, wake: habitScore.wakeScore, phone: habitScore.phoneScore, efficiency: habitScore.efficiencyScore };
+  const weakestKey = Object.keys(scores).reduce((a, b) => scores[a] <= scores[b] ? a : b);
+  const labels = { study: '공부시간', wake: '기상 습관', phone: '스마트폰 사용', efficiency: '공부 방식(효율)' };
+  const advice = {
+    study: `권장 공부시간(${sharedAdjust.recommendedHours.toFixed(1)}시간)에 맞춰 순공 시간을 늘리면 확률이 눈에 띄게 올라갑니다.`,
+    wake: `기상 시간을 조금 더 앞당기면 아침 학습 시간을 추가로 확보할 수 있습니다.`,
+    phone: `스마트폰 사용을 하루 1시간 정도만 줄여도 확률이 크게 개선됩니다.`,
+    efficiency: `단순 개념 학습보다 오답복습·기출풀이 비중을 늘리면 같은 시간으로도 효율이 높아집니다.`
+  };
+  const avgProb = subjectResults.reduce((s, r) => s + r.probResult.prob, 0) / Math.max(1, subjectResults.length);
+  let overall;
+  if (avgProb >= 60) overall = "현재 설정한 목표들은 전반적으로 현실적인 수준입니다.";
+  else if (avgProb >= 30) overall = "목표 달성이 쉽지는 않지만, 습관을 개선하면 충분히 도전해볼 만한 수준입니다.";
+  else overall = "현재 목표들은 상당히 도전적인 수준이라, 일부 과목은 대안 목표를 함께 고려하는 것을 권장합니다.";
+  return `현재 가장 큰 개선 여지가 있는 부분은 <b>${labels[weakestKey]}</b>입니다. ${advice[weakestKey]} ${overall}`;
+}
+
+// ---------- 6. 추천 시간표 ----------
+// 학습 블록 수보다 과목 수가 많으면(시간이 부족하면) 난이도(등급 상승 폭)가 큰 과목을 우선 배정한다.
+// 블록이 충분하면 기존처럼 난이도에 비례해 여러 블록을 배분한다.
+function buildBlockQueue(weights, numBlocks){
+  const order = weights.map((w, i) => i).sort((a, b) => weights[b] - weights[a]);
+  if (numBlocks < weights.length) {
+    return { queue: order.slice(0, numBlocks), limited: true };
+  }
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  const counts = weights.map(w => Math.max(1, Math.round(numBlocks * w / totalWeight)));
+  let diff = numBlocks - counts.reduce((a, b) => a + b, 0);
+  const maxIdx = weights.indexOf(Math.max(...weights));
+  counts[maxIdx] = Math.max(1, counts[maxIdx] + diff);
+
+  const remaining = [...counts];
+  const queue = [];
+  while (queue.length < numBlocks) {
+    let addedAny = false;
+    for (let i = 0; i < weights.length; i++) {
+      if (remaining[i] > 0) { queue.push(i); remaining[i]--; addedAny = true; if (queue.length >= numBlocks) break; }
+    }
+    if (!addedAny) break;
+  }
+  return { queue, limited: false };
+}
+const SCHEDULE_END_MINUTES = 23 * 60; // 추천 시간표는 23시를 넘겨서 배치하지 않는다
+function timeToMinutes(hhmm){
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+function generateSchedule(shared, subjectResults){
+  const totalMinutes = Math.max(0, shared.hours * 60);
+  if (totalMinutes < 10) return { rows: [], limited: false, truncated: false };
+  if (timeToMinutes(shared.studyStartTime) >= SCHEDULE_END_MINUTES) {
+    return { rows: [], limited: false, truncated: true };
+  }
+  const numBlocks = Math.max(1, Math.min(12, Math.round(totalMinutes / 50)));
+  const weights = subjectResults.map(r => Math.max(1, r.probResult.improvement));
+  const { queue, limited } = buildBlockQueue(weights, numBlocks);
+
+  const rows = [];
+  let cursor = shared.studyStartTime;
+  let truncated = false;
+  for (let i = 0; i < queue.length; i++) {
+    if (timeToMinutes(cursor) >= SCHEDULE_END_MINUTES) { truncated = true; break; }
+    const name = subjectResults[queue[i]].subject.name;
+    rows.push({ time: cursor, label: `${name} 집중 학습 (오답·기출 위주)` });
+    cursor = addMinutes(cursor, 50);
+    if (i < queue.length - 1 && timeToMinutes(cursor) < SCHEDULE_END_MINUTES) {
+      rows.push({ time: cursor, label: `쉬는 시간 (스트레칭 · 물 마시기)` });
+      cursor = addMinutes(cursor, 10);
+    } else if (i < queue.length - 1) {
+      truncated = true;
+    }
+  }
+  if (rows.length && timeToMinutes(cursor) < SCHEDULE_END_MINUTES) {
+    rows.push({ time: cursor, label: `오늘 학습 복기 및 내일 계획 세우기 (10분)` });
+  }
+  return { rows, limited, truncated };
+}
+
+// ---------- 렌더링 ----------
+function buildResultHtml(data){
+  const { subjectResults, sharedAdjust, habitScore, aiComment, schedule, shared, warnings } = data;
+
+  const warningsHtml = (warnings && warnings.length)
+    ? `<div class="info-box">${warnings.map(w => `⚠ ${w}`).join('<br>')}</div>`
+    : "";
+
+  const subjectHtml = subjectResults.map(r => {
+    const { subject, goal, probResult, tips, alt } = r;
+    const pf = probResult.prob.toFixed(2);
+    const color = barColorFor(probResult.prob);
+    const altHtml = alt ? `
+      <table class="mini-table">
+        <thead><tr><th>목표 등급</th><th>필요 기말 등급</th><th>예상 확률</th></tr></thead>
+        <tbody>
+          ${alt.map(a => `<tr><td>${gradeLabel(a.target)}</td><td>${a.unreachable ? "불가능" : gradeLabel(a.needed)}</td><td>${a.prob.toFixed(2)}%</td></tr>`).join("")}
+        </tbody>
+      </table>` : "";
+    return `
+      <div class="subcard">
+        <h3>${subject.name} <span class="pill">최근 추이: ${TREND_LABEL[subject.trend]}</span></h3>
+        ${buildGuideText(goal)}
+        <div class="prob-num" style="color:${color}">${pf}%</div>
+        <div class="muted">${probLabel(probResult.prob)}</div>
+        <div class="prob-bar-track"><div class="prob-bar-fill" style="width:${probResult.prob}%;background:${color}"></div></div>
+        <ul class="tips">
+          <li>기준 확률 (등급 ${probResult.improvement <= 0 ? "유지" : probResult.improvement + "단계 상승"}): ${probResult.base.toFixed(2)}%</li>
+          <li>공부시간 보정: <b>${sign(sharedAdjust.studyAdjust)}%p</b></li>
+          <li>기상 시간 보정: <b>${sign(sharedAdjust.wakeAdjust)}%p</b></li>
+          <li>스마트폰 사용 보정: <b>${sign(sharedAdjust.phoneAdjust)}%p</b></li>
+          <li>학습 효율 보정: <b>${sign(sharedAdjust.efficiencyAdjust)}%p</b></li>
+          <li>최근 성적 추이 보정: <b>${sign(probResult.trendAdjust)}%p</b></li>
+        </ul>
+        ${probResult.prob < 45 ? `<p class="muted">목표 달성 확률이 낮아 아래처럼 대안 목표도 함께 계산했습니다.</p>${altHtml}` : ""}
+        <ul class="tips">${tips.map(t => `<li>${t}</li>`).join("")}</ul>
+      </div>`;
+  }).join("");
+
+  const avgProb = subjectResults.reduce((s, r) => s + r.probResult.prob, 0) / Math.max(1, subjectResults.length);
+  const avgImp = subjectResults.reduce((s, r) => s + Math.max(0, r.probResult.improvement), 0) / Math.max(1, subjectResults.length);
+
+  const habitBars = [
+    ["공부시간", habitScore.studyScore],
+    ["기상 습관", habitScore.wakeScore],
+    ["스마트폰", habitScore.phoneScore],
+    ["학습 효율", habitScore.efficiencyScore]
+  ].map(([label, score]) => `
+    <div class="score-row"><span>${label}</span><span>${score}점</span></div>
+    <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${score}%;background:${barColorFor(score)}"></div></div>
+  `).join("");
+
+  const gTips = globalTips(shared, sharedAdjust);
+
+  const scheduleHtml = schedule.rows.length ? `
+    <table class="mini-table">
+      <thead><tr><th>시간</th><th>내용</th></tr></thead>
+      <tbody>${schedule.rows.map(s => `<tr><td>${s.time}</td><td>${s.label}</td></tr>`).join("")}</tbody>
+    </table>
+    <p class="muted">※ ${shared.studyStartTime}~23:00 사이 예시 시간표입니다. 실제 학교/학원 일정에 맞게 조정하세요.${schedule.limited ? " 순공 시간에 비해 과목 수가 많아, 등급 상승 폭이 큰 과목 위주로 우선 배정했습니다." : ""}${schedule.truncated ? " 23시가 넘는 분량은 시간표에 포함하지 않았습니다. 순공 시간을 줄이거나 시작 시간을 앞당겨보세요." : ""}</p>
+  ` : (schedule.truncated
+      ? `<p class="muted">집중 학습 시작 시간이 23시 이후라 추천 시간표를 만들 수 없습니다. 시작 시간을 23시 이전으로 설정해주세요.</p>`
+      : `<p class="muted">순공 시간이 0시간이라 추천 시간표를 만들 수 없습니다.</p>`);
+
+  return `
+    ${warningsHtml}
+    <h2 style="margin:0 0 4px;">🎯 과목별 결과</h2>
+    ${subjectHtml}
+
+    <div class="card result-card">
+      <h2>📊 종합 요약</h2>
+      <p>과목 평균 달성 확률 <b>${avgProb.toFixed(2)}%</b>, 평균 필요 등급 상승 폭 <b>${avgImp.toFixed(2)}단계</b>입니다.</p>
+      <div class="divider"></div>
+      <h3>학습 습관 점수</h3>
+      <div class="stars">${starString(habitScore.starCount)}</div>
+      <p class="muted">종합 ${habitScore.overall}점 / 100점</p>
+      ${habitBars}
+      <div class="divider"></div>
+      <h3>공통 생활습관 개선 팁</h3>
+      <ul class="tips">${gTips.map(t => `<li>${t}</li>`).join("")}</ul>
+    </div>
+
+    <div class="card result-card">
+      <h2>🧭 AI 종합 코멘트</h2>
+      <div class="ai-comment">${aiComment}</div>
+    </div>
+
+    <div class="card result-card">
+      <h2>🗓️ 오늘 추천 시간표</h2>
+      ${scheduleHtml}
+    </div>
+  `;
+}
+
+function analyze(){
+  if (!validateSubjectNames()) return;
+  const { subjects, shared, warnings } = getInputData();
+
+  const goals = subjects.map(s => calculateGoal(s, shared));
+  const avgImpForHours = goals.reduce((s, g) => s + Math.max(0, g.mid - g.neededFinal), 0) / Math.max(1, goals.length);
+  const sharedAdjust = calcSharedAdjust(shared, avgImpForHours);
+
+  const subjectResults = subjects.map((subject, i) => {
+    const goal = goals[i];
+    const probResult = calculateProbability(goal, sharedAdjust, subject.trend);
+    const tips = subjectTips(subject, goal, probResult);
+    const alt = probResult.prob < 45 ? altTargetsTable(subject, shared, sharedAdjust, goal.target) : null;
+    return { subject, goal, probResult, tips, alt };
+  });
+
+  const habitScore = calcHabitScore(shared, sharedAdjust);
+  const aiComment = generateAiComment(shared, sharedAdjust, habitScore, subjectResults);
+  const schedule = generateSchedule(shared, subjectResults);
+
+  document.getElementById('resultContent').innerHTML = buildResultHtml({ subjectResults, sharedAdjust, habitScore, aiComment, schedule, shared, warnings });
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>
