@@ -390,6 +390,7 @@ function calcSharedAdjust(shared, avgImprovement){
 }
 const TREND_ADJUST = { up: 5, steady: 0, down: -5 };
 const TREND_LABEL = { up: '상승 중', steady: '유지', down: '하락 중' };
+const EFFICIENCY_LABEL = { concept: '개념 학습', practice: '문제풀이', review: '오답복습', pastexam: '기출풀이' };
 
 function calculateProbability(goal, sharedAdjust, trend){
   const improvement = goal.mid - goal.neededFinal;
@@ -638,7 +639,7 @@ function buildResultHtml(data){
 
     <div class="card result-card">
       <h2>🧭 AI 종합 코멘트</h2>
-      <div class="ai-comment">${aiComment}</div>
+      <div class="ai-comment" id="aiCommentBox">${aiComment}</div>
     </div>
 
     <div class="card result-card">
@@ -671,6 +672,68 @@ function analyze(){
   document.getElementById('resultContent').innerHTML = buildResultHtml({ subjectResults, sharedAdjust, habitScore, aiComment, schedule, shared, warnings });
   document.getElementById('result').style.display = 'block';
   document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // 결과를 먼저 그린 뒤, AI 코멘트만 비동기로 덧씌운다. (실패해도 위 규칙 기반 코멘트가 그대로 남음)
+  requestGeminiComment(buildGeminiPayload(subjectResults, shared, habitScore, sharedAdjust));
+}
+
+// ---------- 7. Gemini AI 종합 코멘트 (서버리스 프록시 경유) ----------
+// 프론트엔드는 계산된 결과 '숫자'만 보내고, 실제 API 키는 /api/gemini 함수 안에만 있다.
+function buildGeminiPayload(subjectResults, shared, habitScore, sharedAdjust){
+  return {
+    subjects: subjectResults.map(r => ({
+      name: r.subject.name,
+      mid: r.subject.mid,
+      target: r.subject.target,
+      trend: TREND_LABEL[r.subject.trend],
+      neededFinal: r.goal.neededFinal,
+      unreachable: r.goal.unreachable,
+      probability: Number(r.probResult.prob.toFixed(1))
+    })),
+    conditions: {
+      daysLeft: shared.daysLeft,
+      studyHours: shared.hours,
+      recommendedHours: Number(sharedAdjust.recommendedHours.toFixed(1)),
+      wakeTime: shared.wakeTime,
+      phoneHours: shared.phoneHours,
+      efficiency: EFFICIENCY_LABEL[shared.efficiency] || shared.efficiency
+    },
+    habitScore: {
+      overall: habitScore.overall,
+      study: habitScore.studyScore,
+      wake: habitScore.wakeScore,
+      phone: habitScore.phoneScore,
+      efficiency: habitScore.efficiencyScore
+    }
+  };
+}
+function escapeHtml(s){
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function formatGeminiText(text){
+  return escapeHtml(text.trim())
+    .split(/\n{2,}/)
+    .map(p => `<p style="margin:0 0 10px;">${p.replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+async function requestGeminiComment(payload){
+  const box = document.getElementById('aiCommentBox');
+  if (!box) return;
+  const fallback = box.innerHTML; // 규칙 기반 코멘트를 보관해두었다가 실패 시 복구
+  box.innerHTML = '<span class="muted">🤖 AI가 종합 코멘트를 작성하는 중입니다…</span>';
+  try {
+    const res = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('status ' + res.status);
+    const data = await res.json();
+    if (!data || !data.text) throw new Error('empty response');
+    box.innerHTML = formatGeminiText(data.text);
+  } catch (e) {
+    box.innerHTML = fallback + '<p class="muted" style="margin-top:10px;">※ 지금은 AI 연결이 원활하지 않아 기본 코멘트를 표시했습니다.</p>';
+  }
 }
 </script>
 </body>
