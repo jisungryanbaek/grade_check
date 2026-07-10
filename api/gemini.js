@@ -87,9 +87,12 @@ function buildPrompt(payload) {
   const c = payload.conditions || {};
   const h = payload.habitScore || {};
 
-  const subjectLines = subjects.map(s =>
-    `- ${s.name}: 중간 ${s.mid}등급 → 목표 ${s.target}등급, 필요 기말 ${s.unreachable ? '달성 불가' : s.neededFinal + '등급'}, 최근 추이 ${s.trend}, 공부 방식 ${s.efficiency}, 달성 확률 약 ${s.probability}%`
-  ).join('\n');
+  const subjectLines = subjects.map(s => {
+    const midInfo = (s.percentile != null)
+      ? `중간 ${s.mid}등급(상위 ${s.percentile}%, 정밀 환산 ${s.midPrecise}등급 상당)`
+      : `중간 ${s.mid}등급`;
+    return `- ${s.name}: ${midInfo} → 목표 ${s.target}등급, 필요 기말 ${s.unreachable ? '달성 불가' : s.neededFinal + '등급'}, 최근 추이 ${s.trend}, 공부 방식 ${s.efficiency}, 달성 확률 약 ${s.probability}%`;
+  }).join('\n');
 
   return `너는 대한민국 고등학생의 내신 성적을 상담하는 학습 컨설턴트야.
 아래는 한 학생의 기말고사 목표와 학습 조건을 프로그램이 미리 계산한 결과야.
