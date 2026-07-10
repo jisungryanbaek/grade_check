@@ -563,7 +563,7 @@ function buildResultHtml(data){
     ? `<div class="info-box">${warnings.map(w => `⚠ ${w}`).join('<br>')}</div>`
     : "";
 
-  const subjectHtml = subjectResults.map(r => {
+  const subjectHtml = subjectResults.map((r, idx) => {
     const { subject, goal, probResult, tips, alt } = r;
     const pf = probResult.prob.toFixed(2);
     const color = barColorFor(probResult.prob);
@@ -590,7 +590,9 @@ function buildResultHtml(data){
           <li>최근 성적 추이 보정: <b>${sign(probResult.trendAdjust)}%p</b></li>
         </ul>
         ${probResult.prob < 45 ? `<p class="muted">목표 달성 확률이 낮아 아래처럼 대안 목표도 함께 계산했습니다.</p>${altHtml}` : ""}
-        <ul class="tips">${tips.map(t => `<li>${t}</li>`).join("")}</ul>
+        <div class="ai-comment" id="aiSubjectBox-${idx}">
+          <ul class="tips" style="margin:0;">${tips.map(t => `<li>${t}</li>`).join("")}</ul>
+        </div>
       </div>`;
   }).join("");
 
@@ -673,8 +675,8 @@ function analyze(){
   document.getElementById('result').style.display = 'block';
   document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // 결과를 먼저 그린 뒤, AI 코멘트만 비동기로 덧씌운다. (실패해도 위 규칙 기반 코멘트가 그대로 남음)
-  requestGeminiComment(buildGeminiPayload(subjectResults, shared, habitScore, sharedAdjust));
+  // 결과를 먼저 그린 뒤, AI 분석만 비동기로 덧씌운다. (실패해도 위 규칙 기반 코멘트/팁이 그대로 남음)
+  requestGeminiAnalysis(buildGeminiPayload(subjectResults, shared, habitScore, sharedAdjust));
 }
 
 // ---------- 7. Gemini AI 종합 코멘트 (서버리스 프록시 경유) ----------
@@ -716,11 +718,17 @@ function formatGeminiText(text){
     .map(p => `<p style="margin:0 0 10px;">${p.replace(/\n/g, '<br>')}</p>`)
     .join('');
 }
-async function requestGeminiComment(payload){
-  const box = document.getElementById('aiCommentBox');
-  if (!box) return;
-  const fallback = box.innerHTML; // 규칙 기반 코멘트를 보관해두었다가 실패 시 복구
-  box.innerHTML = '<span class="muted">🤖 AI가 종합 코멘트를 작성하는 중입니다…</span>';
+async function requestGeminiAnalysis(payload){
+  const overallBox = document.getElementById('aiCommentBox');
+  const subjectBoxes = payload.subjects.map((_, idx) => document.getElementById('aiSubjectBox-' + idx));
+
+  // 규칙 기반 결과(폴백)를 미리 보관해두었다가, 실패 시 그대로 복구한다.
+  const overallFallback = overallBox ? overallBox.innerHTML : '';
+  const subjectFallbacks = subjectBoxes.map(b => (b ? b.innerHTML : ''));
+
+  if (overallBox) overallBox.innerHTML = '<span class="muted">🤖 AI가 종합 코멘트를 작성하는 중입니다…</span>';
+  subjectBoxes.forEach(b => { if (b) b.innerHTML = '<span class="muted">🤖 AI가 이 과목을 분석하는 중입니다…</span>'; });
+
   try {
     const res = await fetch('/api/gemini', {
       method: 'POST',
@@ -729,10 +737,26 @@ async function requestGeminiComment(payload){
     });
     if (!res.ok) throw new Error('status ' + res.status);
     const data = await res.json();
-    if (!data || !data.text) throw new Error('empty response');
-    box.innerHTML = formatGeminiText(data.text);
+    if (!data || !data.overall || !Array.isArray(data.subjects)) throw new Error('malformed response');
+
+    if (overallBox) overallBox.innerHTML = formatGeminiText(data.overall);
+
+    // 이름으로 먼저 매칭하고, 못 찾으면 같은 순서(인덱스)로 매칭한다.
+    payload.subjects.forEach((s, idx) => {
+      const box = subjectBoxes[idx];
+      if (!box) return;
+      const matched = data.subjects.find(x => x && x.name === s.name) || data.subjects[idx];
+      if (matched && matched.analysis) {
+        box.innerHTML = formatGeminiText(matched.analysis);
+      } else {
+        box.innerHTML = subjectFallbacks[idx]; // 이 과목만 못 받아왔으면 규칙 기반으로 복구
+      }
+    });
   } catch (e) {
-    box.innerHTML = fallback + '<p class="muted" style="margin-top:10px;">※ 지금은 AI 연결이 원활하지 않아 기본 코멘트를 표시했습니다.</p>';
+    if (overallBox) {
+      overallBox.innerHTML = overallFallback + '<p class="muted" style="margin-top:10px;">※ 지금은 AI 연결이 원활하지 않아 기본 코멘트를 표시했습니다.</p>';
+    }
+    subjectBoxes.forEach((b, idx) => { if (b) b.innerHTML = subjectFallbacks[idx]; });
   }
 }
 </script>
